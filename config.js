@@ -4,6 +4,6 @@
  */
 window.SCHED20_CONFIG = {
   apiUrl: 'https://script.google.com/macros/s/AKfycbx_pFpdtOWNMHYWR1UeMIddga6OJep-6IpkRZlSGY92_jgoB2tWH1dn4Y2APvQRw66R/exec',
-  apiVersion: 2,
-  uiVersion: '1.1.0'
+  apiVersion: 3,
+  uiVersion: '1.2.0'
 };

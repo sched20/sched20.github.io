@@ -333,6 +333,35 @@ textarea:focus {
   color: var(--yes);
 }
 
+.voter-list {
+  list-style: none;
+  margin: 0.5rem 0 0.25rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.voter-list li {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.voter-list strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.voter-empty {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .vote-counts {
   display: flex;
   gap: 0.75rem;

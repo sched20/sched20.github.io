@@ -6,7 +6,7 @@
   function fail(err) {
     if (Sched20.isAuthError(err)) {
       Sched20.clearMasterCode();
-      renderUnlock();
+      renderGate();
       Sched20.showMessage(messageEl, err.message, 'error');
       return;
     }
@@ -14,59 +14,25 @@
     Sched20.showMessage(messageEl, err.message || 'Errore', 'error');
   }
 
-  function renderCreate() {
+  function renderGate() {
     app.innerHTML =
       '<div class="card">' +
-        '<h2>Crea l\'accesso master</h2>' +
-        '<p class="subtitle">Scegli un nome e un codice. Il codice apre questa pagina da qualsiasi browser. Conservalo: non si può recuperare.</p>' +
-        '<label for="displayName">Nome</label>' +
-        '<input type="text" id="displayName" maxlength="80" placeholder="Es. Marco" autocomplete="nickname">' +
-        '<label for="masterCode">Codice</label>' +
-        '<input type="password" id="masterCode" maxlength="80" placeholder="Almeno 4 caratteri" autocomplete="new-password">' +
-        '<label for="masterCodeAgain">Ripeti il codice</label>' +
-        '<input type="password" id="masterCodeAgain" maxlength="80" autocomplete="new-password">' +
-        '<button class="btn btn-primary" id="btnRegister" type="button">Crea accesso master</button>' +
-      '</div>';
-
-    document.getElementById('btnRegister').addEventListener('click', function () {
-      var name = document.getElementById('displayName').value;
-      var code = document.getElementById('masterCode').value;
-      var again = document.getElementById('masterCodeAgain').value;
-      var btn = document.getElementById('btnRegister');
-      Sched20.clearMessage(messageEl);
-      if (String(code).trim().length < 4) {
-        Sched20.showMessage(messageEl, 'Il codice deve avere almeno 4 caratteri.', 'error');
-        return;
-      }
-      if (code !== again) {
-        Sched20.showMessage(messageEl, 'I due codici non coincidono.', 'error');
-        return;
-      }
-      btn.disabled = true;
-      Sched20.run('registerMaster', { displayName: name, masterCode: code })
-        .then(function () {
-          Sched20.setMasterCode(code);
-          load();
-        })
-        .catch(function (err) {
-          if (Sched20.isAuthError(err)) {
-            fail(err);
-            return;
-          }
-          Sched20.showMessage(messageEl, err.message, 'error');
-          btn.disabled = false;
-        });
-    });
-  }
-
-  function renderUnlock() {
-    app.innerHTML =
-      '<div class="card">' +
-        '<h2>Accesso master</h2>' +
-        '<p class="subtitle">I giocatori non passano da qui: aprono il link della campagna e scrivono il proprio nome.</p>' +
+        '<h2>Entra</h2>' +
+        '<p class="subtitle">Ogni master ha un codice suo. Da qui vedi solo le tue campagne.</p>' +
         '<label for="masterCode">Codice</label>' +
         '<input type="password" id="masterCode" maxlength="80" autocomplete="current-password">' +
         '<button class="btn btn-primary" id="btnUnlock" type="button">Entra</button>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>Nuovo master</h2>' +
+        '<p class="subtitle">Crea un accesso se non ne hai uno. Il codice non si può recuperare. Un altro master, con un altro codice, avrà altre campagne.</p>' +
+        '<label for="displayName">Nome</label>' +
+        '<input type="text" id="displayName" maxlength="80" placeholder="Es. Marco" autocomplete="nickname">' +
+        '<label for="newCode">Codice</label>' +
+        '<input type="password" id="newCode" maxlength="80" placeholder="Almeno 4 caratteri" autocomplete="new-password">' +
+        '<label for="newCodeAgain">Ripeti il codice</label>' +
+        '<input type="password" id="newCodeAgain" maxlength="80" autocomplete="new-password">' +
+        '<button class="btn btn-secondary" id="btnRegister" type="button">Crea accesso master</button>' +
       '</div>';
 
     document.getElementById('btnUnlock').addEventListener('click', function () {
@@ -89,6 +55,32 @@
           btn.disabled = false;
         });
     });
+
+    document.getElementById('btnRegister').addEventListener('click', function () {
+      var name = document.getElementById('displayName').value;
+      var code = document.getElementById('newCode').value;
+      var again = document.getElementById('newCodeAgain').value;
+      var btn = document.getElementById('btnRegister');
+      Sched20.clearMessage(messageEl);
+      if (String(code).trim().length < 4) {
+        Sched20.showMessage(messageEl, 'Il codice deve avere almeno 4 caratteri.', 'error');
+        return;
+      }
+      if (code !== again) {
+        Sched20.showMessage(messageEl, 'I due codici non coincidono.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      Sched20.run('registerMaster', { displayName: name, masterCode: code })
+        .then(function () {
+          Sched20.setMasterCode(code);
+          load();
+        })
+        .catch(function (err) {
+          Sched20.showMessage(messageEl, err.message, 'error');
+          btn.disabled = false;
+        });
+    });
   }
 
   function renderDashboard(state) {
@@ -99,10 +91,19 @@
     } else {
       campaignsHtml = '<ul class="campaign-list">' + campaigns.map(function (c) {
         var link = Sched20.buildCampaignLink(c.uuid);
+        var proposed = Number(c.proposedCount) || 0;
+        var confirmed = Number(c.confirmedCount) || 0;
+        var summary = 'Nessuna data proposta';
+        if (proposed || confirmed) {
+          var parts = [];
+          if (proposed) parts.push(proposed === 1 ? '1 data proposta' : proposed + ' date proposte');
+          if (confirmed) parts.push(confirmed === 1 ? '1 confermata' : confirmed + ' confermate');
+          summary = parts.join(' · ');
+        }
         return (
           '<li class="campaign-item">' +
             '<span class="campaign-name">' + Sched20.escapeHtml(c.name) + '</span>' +
-            '<p class="subtitle" style="margin:0.25rem 0 0.5rem;font-size:0.85rem">I giocatori aprono il link e scrivono il proprio nome</p>' +
+            '<p class="subtitle" style="margin:0.25rem 0 0.5rem;font-size:0.85rem">' + Sched20.escapeHtml(summary) + '. I giocatori aprono il link e votano ogni data.</p>' +
             '<div class="link-row">' +
               '<input type="text" readonly value="' + Sched20.escapeHtml(link) + '">' +
               '<button class="btn btn-secondary btn-sm btn-copy" type="button" data-link="' + Sched20.escapeHtml(link) + '">Copia</button>' +
@@ -124,6 +125,7 @@
       '</div>' +
       '<div class="card">' +
         '<h2>Nuova campagna</h2>' +
+        '<p class="subtitle">Una campagna è un tavolo. Dentro puoi proporre più date, finché non ne confermi una.</p>' +
         '<label for="campaignName">Nome campagna</label>' +
         '<input type="text" id="campaignName" maxlength="120" placeholder="Es. La Compagnia dell\'Anello">' +
         '<button class="btn btn-primary" id="btnCreate" type="button">Crea campagna</button>' +
@@ -132,7 +134,7 @@
     document.getElementById('btnSignOut').addEventListener('click', function () {
       Sched20.clearMasterCode();
       Sched20.clearMessage(messageEl);
-      renderUnlock();
+      renderGate();
     });
 
     app.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -173,12 +175,8 @@
     app.innerHTML = '<div class="loading">Caricamento…</div>';
     Sched20.run('getHomeState')
       .then(function (state) {
-        if (!state || state.needsSetup) {
-          renderCreate();
-          return;
-        }
-        if (!state.isMaster) {
-          renderUnlock();
+        if (!state || !state.isMaster) {
+          renderGate();
           return;
         }
         renderDashboard(state);

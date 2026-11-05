@@ -37,6 +37,7 @@
     return (
       '<div class="card">' +
         '<h2>Proponi una data</h2>' +
+        '<p class="subtitle">Puoi proporne più di una. I giocatori votano ciascuna, poi confermi quella giusta.</p>' +
         '<div class="form-row">' +
           '<div><label for="sessionDate">Data</label><input type="date" id="sessionDate"></div>' +
           '<div><label for="sessionTime">Orario</label><input type="time" id="sessionTime" value="20:30"></div>' +
@@ -67,6 +68,14 @@
     var voteClass = function (vote) {
       return session.myVote === vote ? ' active-' + vote : '';
     };
+    var voteLabel = { yes: 'Sì', maybe: 'Forse', no: 'No' };
+    var voters = Array.isArray(session.voters) ? session.voters : [];
+    var votersHtml = voters.length
+      ? '<ul class="voter-list">' + voters.map(function (voter) {
+          return '<li><span>' + Sched20.escapeHtml(voter.playerName) + '</span> <strong>' +
+            Sched20.escapeHtml(voteLabel[voter.vote] || voter.vote) + '</strong></li>';
+        }).join('') + '</ul>'
+      : '<p class="voter-empty">Nessun voto ancora.</p>';
     return (
       '<div class="session-card' + (session.status === 'confirmed' ? ' confirmed' : '') + '">' +
         '<div class="session-header">' +
@@ -76,6 +85,7 @@
           '</div>' +
           statusBadge +
         '</div>' +
+        votersHtml +
         '<div class="vote-counts">' +
           '<span>Sì: <strong>' + Sched20.escapeHtml(counts.yes) + '</strong></span>' +
           '<span>Forse: <strong>' + Sched20.escapeHtml(counts.maybe) + '</strong></span>' +
