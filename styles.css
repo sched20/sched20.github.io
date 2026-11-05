@@ -1,30 +1,56 @@
 :root {
-  --bg: #0f1419;
-  --surface: #1a2332;
-  --surface2: #243044;
-  --border: #2d3a4f;
-  --text: #e8edf4;
-  --muted: #8b9cb3;
-  --accent: #5b8def;
-  --accent-hover: #4a7de0;
+  --bg: #100e0c;
+  --surface: rgba(22, 17, 13, 0.9);
+  --surface2: rgba(42, 33, 24, 0.92);
+  --border: rgba(212, 168, 104, 0.32);
+  --text: #f4efe6;
+  --muted: #cbbba4;
+  --accent: #e2b15a;
+  --accent-hover: #f0c56e;
+  --accent-ink: #1c140c;
   --yes: #3d9b6e;
   --maybe: #c9a227;
   --no: #c45c5c;
-  --radius: 10px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --radius: 12px;
+  --shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: -2;
+  background: url("sfondo.jpg") center / cover no-repeat;
+}
+
+body::after {
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(12, 10, 8, 0.68) 0%, rgba(12, 10, 8, 0.4) 52%, rgba(12, 10, 8, 0.18) 100%),
+    linear-gradient(180deg, rgba(12, 10, 8, 0.12), rgba(12, 10, 8, 0.34));
 }
 
 button,
@@ -40,9 +66,12 @@ textarea {
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-family: Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 2rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
+  letter-spacing: 0.01em;
+  margin: 0 0 0.35rem;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.75);
 }
 
 h2 {
@@ -55,6 +84,7 @@ h2 {
   color: var(--muted);
   font-size: 0.95rem;
   margin-bottom: 1.5rem;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
 }
 
 .card {
@@ -64,6 +94,7 @@ h2 {
   padding: 1.25rem;
   margin-bottom: 1rem;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
 }
 
 .card-muted {
@@ -145,7 +176,7 @@ textarea:focus {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -324,7 +355,7 @@ textarea:focus {
 }
 
 .badge-proposed {
-  background: rgba(91, 141, 239, 0.2);
+  background: rgba(226, 177, 90, 0.18);
   color: var(--accent);
 }
 
@@ -420,6 +451,12 @@ textarea:focus {
   font-size: 0.9rem;
   color: var(--muted);
   margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem 0.2rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
 }
 
 .player-bar input {
@@ -439,6 +476,23 @@ textarea:focus {
 
 .top-link {
   margin-bottom: 1rem;
+}
+
+.brand {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  color: var(--accent);
+  font-family: Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+
+.brand:hover {
+  color: var(--accent-hover);
 }
 
 .top-link a {
@@ -466,4 +520,5 @@ textarea:focus {
   text-align: center;
   color: var(--muted);
   font-size: 0.8rem;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
 }
