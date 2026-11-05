@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Icona Sched20">
+  <rect width="512" height="512" rx="115" fill="#5b8def"/>
+  <g transform="translate(86 86) scale(1.7)">
+    <polygon points="100,10 177.9,55 177.9,145 100,190 22.1,145 22.1,55" fill="none" stroke="#0f1419" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M100 50 L55 128 L145 128 Z M100 50 L100 10 M100 50 L22.1 55 M100 50 L177.9 55 M55 128 L22.1 55 M55 128 L22.1 145 M55 128 L100 190 M145 128 L177.9 55 M145 128 L177.9 145 M145 128 L100 190" fill="none" stroke="#0f1419" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M82 104 L96 118 L120 90" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -1,6 +1,7 @@
 var Sched20 = (function () {
   var MASTER_CODE_KEY = 'sched20.masterCode';
   var PLAYER_NAME_KEY = 'sched20.playerName';
+  var RECENT_KEY = 'sched20.recentCampaigns';
 
   function getConfig_() {
     var cfg = window.SCHED20_CONFIG || {};
@@ -56,6 +57,28 @@ var Sched20 = (function () {
     if (value) storageSet_(PLAYER_NAME_KEY, value);
     else storageRemove_(PLAYER_NAME_KEY);
     return value;
+  }
+
+  function recentCampaigns() {
+    try {
+      var parsed = JSON.parse(storageGet_(RECENT_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function (item) {
+        return item && item.uuid && item.name;
+      }).slice(0, 8);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function rememberCampaign(uuid, name) {
+    var id = String(uuid || '').trim();
+    var label = String(name || '').trim();
+    if (!id || !label) return;
+    var next = [{ uuid: id, name: label }].concat(recentCampaigns().filter(function (item) {
+      return item.uuid !== id;
+    })).slice(0, 8);
+    storageSet_(RECENT_KEY, JSON.stringify(next));
   }
 
   function isAuthError(err) {
@@ -212,6 +235,8 @@ var Sched20 = (function () {
     clearMasterCode: clearMasterCode,
     getPlayerName: getPlayerName,
     setPlayerName: setPlayerName,
+    recentCampaigns: recentCampaigns,
+    rememberCampaign: rememberCampaign,
     run: run,
     buildHomeLink: buildHomeLink,
     buildCampaignLink: buildCampaignLink,

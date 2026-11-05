@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Sched20">
-  <circle cx="40" cy="40" r="36" fill="#0c0c0e" stroke="#ffffff" stroke-width="4"/>
-  <text x="40" y="48" text-anchor="middle" fill="#f6f5f3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="26" font-weight="700">20</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Sched20">
+  <polygon points="100,10 177.9,55 177.9,145 100,190 22.1,145 22.1,55" fill="#1a2332" stroke="#5b8def" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M100 50 L55 128 L145 128 Z M100 50 L100 10 M100 50 L22.1 55 M100 50 L177.9 55 M55 128 L22.1 55 M55 128 L22.1 145 M55 128 L100 190 M145 128 L177.9 55 M145 128 L177.9 145 M145 128 L100 190" fill="none" stroke="#5b8def" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M82 104 L96 118 L120 90" fill="none" stroke="#e8edf4" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

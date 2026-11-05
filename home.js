@@ -32,8 +32,8 @@
     showApp();
     app.innerHTML =
       '<div class="card role-card">' +
-        '<h1>Sched20</h1>' +
-        '<p class="subtitle">Organizza le date del tavolo, o vota quelle già proposte.</p>' +
+        '<h1 class="wordmark"><img src="wordmark.png" alt="Sched20"></h1>' +
+        '<p class="tagline">Organizza le sessioni della tua campagna</p>' +
         '<div class="role-list">' +
           '<button class="role-btn" id="btnAsMaster" type="button">' +
             '<strong>Master</strong>' +
@@ -53,11 +53,23 @@
   function renderPlayer() {
     setStage(false);
     showApp();
+    var recent = Sched20.recentCampaigns();
+    var recentHtml = '';
+    if (recent.length) {
+      recentHtml =
+        '<p class="section-label">Le tue campagne</p>' +
+        '<ul class="recent-list">' + recent.map(function (item) {
+          var href = 'campaign.html?c=' + encodeURIComponent(item.uuid);
+          return '<li><a href="' + Sched20.escapeHtml(href) + '"><strong>' +
+            Sched20.escapeHtml(item.name) + '</strong><span>Apri e vota</span></a></li>';
+        }).join('') + '</ul>';
+    }
     app.innerHTML =
       '<div class="card">' +
         '<button class="text-back" id="btnBack" type="button">← Indietro</button>' +
         '<h2>Giocatore</h2>' +
-        '<p class="subtitle">Incolla il link che ti ha mandato il master. Poi scrivi il tuo nome e voti ogni data.</p>' +
+        '<p class="subtitle">Apri una campagna che hai già visitato, oppure incolla il link del master.</p>' +
+        recentHtml +
         '<label for="campaignLink">Link della campagna</label>' +
         '<input type="text" id="campaignLink" placeholder="https://…/campaign.html?c=…" autocomplete="off">' +
         '<button class="btn btn-primary" id="btnOpenCampaign" type="button">Apri la campagna</button>' +
