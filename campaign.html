@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campagna · Sched20</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="top-link" id="topLink" hidden>
+      <a id="homeLink" href="index.html">← Torna alla home master</a>
+    </div>
+    <h1 id="campaignTitle">Campagna</h1>
+    <p class="subtitle" id="campaignSubtitle">Caricamento…</p>
+    <div id="playerBar" class="player-bar" hidden></div>
+    <noscript><p class="error">Serve JavaScript per usare Sched20.</p></noscript>
+    <div id="message" hidden></div>
+    <div id="app" class="loading">Caricamento…</div>
+    <p class="version-line" id="versionLine"></p>
+  </div>
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="client.js"></script>
+  <script src="campaign.js"></script>
+</body>
+</html>
