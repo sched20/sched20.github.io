@@ -832,7 +832,4 @@ body.home .stage .card:last-of-type {
     margin-bottom: 0.6rem;
   }
 
-  body.home .version-line {
-    display: none;
-  }
 }
