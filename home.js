@@ -12,6 +12,91 @@
     app.className = '';
   }
 
+  function setStage(wide) {
+    document.getElementById('stage').className = wide ? 'stage stage-wide' : 'stage';
+  }
+
+  function uuidFromText(value) {
+    var text = String(value || '').trim();
+    if (!text) return '';
+    var fromQuery = text.match(/[?&]c=([0-9a-fA-F-]{36})/);
+    if (fromQuery) return fromQuery[1];
+    if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(text)) {
+      return text;
+    }
+    return '';
+  }
+
+  function renderChoice() {
+    setStage(false);
+    showApp();
+    app.innerHTML =
+      '<div class="card role-card">' +
+        '<h1>Sched20</h1>' +
+        '<p class="subtitle">Organizza le date del tavolo, o vota quelle già proposte.</p>' +
+        '<div class="role-list">' +
+          '<button class="role-btn" id="btnAsMaster" type="button">' +
+            '<strong>Master</strong>' +
+            '<span>Entra con il tuo codice e gestisci le campagne.</span>' +
+          '</button>' +
+          '<button class="role-btn" id="btnAsPlayer" type="button">' +
+            '<strong>Giocatore</strong>' +
+            '<span>Apri il link della campagna e vota le date.</span>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('btnAsMaster').addEventListener('click', enterMaster);
+    document.getElementById('btnAsPlayer').addEventListener('click', renderPlayer);
+  }
+
+  function renderPlayer() {
+    setStage(false);
+    showApp();
+    app.innerHTML =
+      '<div class="card">' +
+        '<button class="text-back" id="btnBack" type="button">← Indietro</button>' +
+        '<h2>Giocatore</h2>' +
+        '<p class="subtitle">Incolla il link che ti ha mandato il master. Poi scrivi il tuo nome e voti ogni data.</p>' +
+        '<label for="campaignLink">Link della campagna</label>' +
+        '<input type="text" id="campaignLink" placeholder="https://…/campaign.html?c=…" autocomplete="off">' +
+        '<button class="btn btn-primary" id="btnOpenCampaign" type="button">Apri la campagna</button>' +
+      '</div>';
+
+    document.getElementById('btnBack').addEventListener('click', function () {
+      Sched20.clearMessage(messageEl);
+      renderChoice();
+    });
+    document.getElementById('btnOpenCampaign').addEventListener('click', function () {
+      var uuid = uuidFromText(document.getElementById('campaignLink').value);
+      Sched20.clearMessage(messageEl);
+      if (!uuid) {
+        Sched20.showMessage(messageEl, 'Quel link non è di una campagna. Chiedilo di nuovo al master.', 'error');
+        return;
+      }
+      window.location.href = 'campaign.html?c=' + encodeURIComponent(uuid);
+    });
+  }
+
+  function enterMaster() {
+    Sched20.clearMessage(messageEl);
+    if (!Sched20.getMasterCode()) {
+      renderGate();
+      return;
+    }
+    showLoading();
+    Sched20.run('getHomeState')
+      .then(function (state) {
+        if (!state || !state.isMaster) {
+          Sched20.clearMasterCode();
+          renderGate();
+          return;
+        }
+        renderDashboard(state);
+      })
+      .catch(fail);
+  }
+
   function fail(err) {
     if (Sched20.isAuthError(err)) {
       Sched20.clearMasterCode();
@@ -19,14 +104,16 @@
       Sched20.showMessage(messageEl, err.message, 'error');
       return;
     }
-    app.className = '';
+    renderChoice();
     Sched20.showMessage(messageEl, err.message || 'Errore', 'error');
   }
 
   function renderGate() {
+    setStage(false);
     showApp();
     app.innerHTML =
       '<div class="card">' +
+        '<button class="text-back" id="btnBack" type="button">← Indietro</button>' +
         '<h2>Entra</h2>' +
         '<p class="subtitle">Ogni master ha un codice suo. Da qui vedi solo le tue campagne.</p>' +
         '<label for="masterCode">Codice</label>' +
@@ -44,6 +131,11 @@
         '<input type="password" id="newCodeAgain" maxlength="80" autocomplete="new-password">' +
         '<button class="btn btn-secondary" id="btnRegister" type="button">Crea accesso master</button>' +
       '</div>';
+
+    document.getElementById('btnBack').addEventListener('click', function () {
+      Sched20.clearMessage(messageEl);
+      renderChoice();
+    });
 
     document.getElementById('btnUnlock').addEventListener('click', function () {
       var code = document.getElementById('masterCode').value;
@@ -84,7 +176,7 @@
       Sched20.run('registerMaster', { displayName: name, masterCode: code })
         .then(function () {
           Sched20.setMasterCode(code);
-          load();
+          enterMaster();
         })
         .catch(function (err) {
           Sched20.showMessage(messageEl, err.message, 'error');
@@ -94,6 +186,7 @@
   }
 
   function renderDashboard(state) {
+    setStage(true);
     showApp();
     var campaigns = Array.isArray(state.campaigns) ? state.campaigns : [];
     var campaignsHtml = '';
@@ -145,7 +238,7 @@
     document.getElementById('btnSignOut').addEventListener('click', function () {
       Sched20.clearMasterCode();
       Sched20.clearMessage(messageEl);
-      renderGate();
+      renderChoice();
     });
 
     app.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -168,7 +261,7 @@
       Sched20.run('createCampaign', { name: name })
         .then(function () {
           Sched20.showMessage(messageEl, 'Campagna creata.', 'success');
-          load();
+          enterMaster();
         })
         .catch(function (err) {
           if (Sched20.isAuthError(err)) {
@@ -181,23 +274,9 @@
     });
   }
 
-  function load() {
-    Sched20.clearMessage(messageEl);
-    showLoading();
-    Sched20.run('getHomeState')
-      .then(function (state) {
-        if (!state || !state.isMaster) {
-          renderGate();
-          return;
-        }
-        renderDashboard(state);
-      })
-      .catch(fail);
-  }
-
   if (!Sched20.isConfigured()) {
     Sched20.renderSetup(app);
     return;
   }
-  load();
+  renderChoice();
 })();

@@ -3,18 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sched20 – Master</title>
+  <title>Sched20</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <header class="masthead">
-      <h1>Sched20</h1>
-      <p class="subtitle">Ogni master ha le sue campagne. In ciascuna, più date da far votare.</p>
-    </header>
+  <div class="stage" id="stage">
+    <img class="logo-badge" src="logo.svg" alt="Sched20">
     <noscript><p class="error">Serve JavaScript per usare Sched20.</p></noscript>
-    <div id="message" hidden></div>
     <div id="app" class="loading">Caricamento…</div>
+    <div id="message" hidden></div>
     <p class="version-line" id="versionLine"></p>
   </div>
   <script src="config.js"></script>

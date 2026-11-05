@@ -588,3 +588,103 @@ textarea:focus {
   font-size: 0.75rem;
   letter-spacing: 0.02em;
 }
+
+.stage {
+  width: min(440px, calc(100% - 1.5rem));
+  margin: 4.25rem auto 2.5rem;
+  position: relative;
+}
+
+.stage-wide {
+  width: min(680px, calc(100% - 1.5rem));
+}
+
+.logo-badge {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  width: 92px;
+  height: 92px;
+  transform: translate(-50%, -46%);
+  border-radius: 50%;
+  background: #0c0c0e;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.stage .card:first-child {
+  padding-top: 3.5rem;
+}
+
+.role-card {
+  text-align: center;
+  min-height: 22rem;
+}
+
+.role-card h1 {
+  font-size: 1.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.role-card .subtitle {
+  margin-bottom: 1.25rem;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: left;
+}
+
+.role-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.role-btn strong {
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.role-btn span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.role-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.role-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.text-back {
+  display: inline-flex;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.text-back:hover {
+  color: var(--text);
+}
