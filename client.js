@@ -195,6 +195,7 @@ var Sched20 = (function () {
   }
 
   function renderSetup(el) {
+    el.className = '';
     el.innerHTML =
       '<div class="card setup-card">' +
         '<h2>Configurazione mancante</h2>' +

@@ -8,7 +8,13 @@
   Sched20.applyVersion(document.getElementById('versionLine'));
   document.getElementById('homeLink').href = Sched20.buildHomeLink();
 
+  function showLoading() {
+    app.className = 'loading';
+    app.textContent = 'Caricamento…';
+  }
+
   function fail(err) {
+    app.className = '';
     document.getElementById('campaignSubtitle').textContent = 'Errore';
     app.innerHTML = '<div class="card card-muted"><p>' + Sched20.escapeHtml(err.message || 'Errore') + '</p></div>';
   }
@@ -165,6 +171,7 @@
   }
 
   function renderSessions(sessions) {
+    app.className = '';
     var list = Array.isArray(sessions) ? sessions : [];
     var listHtml = list.length
       ? list.map(renderSession).join('')
@@ -201,7 +208,7 @@
   function init() {
     Sched20.clearMessage(messageEl);
     document.getElementById('campaignSubtitle').textContent = 'Caricamento…';
-    app.innerHTML = '<div class="loading">Caricamento…</div>';
+    showLoading();
     Sched20.run('getCampaign', { campaignUuid: campaignUuid })
       .then(function (data) {
         var campaign = data && data.campaign ? data.campaign : {};
@@ -221,6 +228,7 @@
 
   if (!campaignUuid) {
     document.getElementById('campaignSubtitle').textContent = 'Errore';
+    app.className = '';
     app.innerHTML = '<div class="card card-muted"><p>Link campagna non valido: parametro <strong>c</strong> mancante.</p></div>';
     return;
   }

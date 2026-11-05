@@ -3,6 +3,15 @@
   var messageEl = document.getElementById('message');
   Sched20.applyVersion(document.getElementById('versionLine'));
 
+  function showLoading() {
+    app.className = 'loading';
+    app.textContent = 'Caricamento…';
+  }
+
+  function showApp() {
+    app.className = '';
+  }
+
   function fail(err) {
     if (Sched20.isAuthError(err)) {
       Sched20.clearMasterCode();
@@ -10,11 +19,12 @@
       Sched20.showMessage(messageEl, err.message, 'error');
       return;
     }
-    app.innerHTML = '';
+    app.className = '';
     Sched20.showMessage(messageEl, err.message || 'Errore', 'error');
   }
 
   function renderGate() {
+    showApp();
     app.innerHTML =
       '<div class="card">' +
         '<h2>Entra</h2>' +
@@ -84,6 +94,7 @@
   }
 
   function renderDashboard(state) {
+    showApp();
     var campaigns = Array.isArray(state.campaigns) ? state.campaigns : [];
     var campaignsHtml = '';
     if (!campaigns.length) {
@@ -103,7 +114,7 @@
         return (
           '<li class="campaign-item">' +
             '<span class="campaign-name">' + Sched20.escapeHtml(c.name) + '</span>' +
-            '<p class="subtitle" style="margin:0.25rem 0 0.5rem;font-size:0.85rem">' + Sched20.escapeHtml(summary) + '. I giocatori aprono il link e votano ogni data.</p>' +
+            '<p class="campaign-meta">' + Sched20.escapeHtml(summary) + '. I giocatori aprono il link e votano ogni data.</p>' +
             '<div class="link-row">' +
               '<input type="text" readonly value="' + Sched20.escapeHtml(link) + '">' +
               '<button class="btn btn-secondary btn-sm btn-copy" type="button" data-link="' + Sched20.escapeHtml(link) + '">Copia</button>' +
@@ -120,7 +131,7 @@
           '<h2>Ciao, ' + Sched20.escapeHtml(state.displayName || 'master') + '</h2>' +
           '<button class="btn btn-secondary btn-sm" id="btnSignOut" type="button">Esci</button>' +
         '</div>' +
-        '<p class="subtitle" style="margin-bottom:0">Le tue campagne</p>' +
+        '<p class="section-label">Le tue campagne</p>' +
         campaignsHtml +
       '</div>' +
       '<div class="card">' +
@@ -172,7 +183,7 @@
 
   function load() {
     Sched20.clearMessage(messageEl);
-    app.innerHTML = '<div class="loading">Caricamento…</div>';
+    showLoading();
     Sched20.run('getHomeState')
       .then(function (state) {
         if (!state || !state.isMaster) {
