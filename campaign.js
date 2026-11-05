@@ -173,6 +173,13 @@
   function renderSessions(sessions) {
     app.className = '';
     var list = Array.isArray(sessions) ? sessions : [];
+    var confirmed = null;
+    list.forEach(function (session) {
+      if (!confirmed && session.status === 'confirmed') confirmed = session;
+    });
+    var confirmedHtml = confirmed
+      ? '<p class="confirmed-line">Confermata · ' + Sched20.escapeHtml(Sched20.formatDateIt(confirmed.date)) + ' · ' + Sched20.escapeHtml(confirmed.startTime) + '</p>'
+      : '';
     var listHtml = list.length
       ? list.map(renderSession).join('')
       : '<p class="empty">Nessuna sessione proposta. ' + (isOwner ? 'Aggiungine una sopra.' : 'Il master proporrà le date a breve.') + '</p>';
@@ -181,6 +188,7 @@
       renderMasterPanel() +
       '<div class="card">' +
         '<h2>Sessioni</h2>' +
+        confirmedHtml +
         listHtml +
       '</div>';
     bindEvents();
@@ -214,6 +222,7 @@
         var campaign = data && data.campaign ? data.campaign : {};
         document.getElementById('campaignTitle').textContent = campaign.name || 'Campagna';
         document.title = (campaign.name || 'Campagna') + ' · Sched20';
+        Sched20.rememberCampaign(campaign.uuid || campaignUuid, campaign.name || 'Campagna');
         isOwner = !!(data && data.isOwner);
         document.getElementById('campaignSubtitle').textContent = isOwner
           ? 'Sei il master di questa campagna'
