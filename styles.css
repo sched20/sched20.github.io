@@ -98,6 +98,7 @@ label {
 }
 
 input[type="text"],
+input[type="password"],
 input[type="date"],
 input[type="time"],
 textarea {
@@ -387,14 +388,13 @@ textarea:focus {
 }
 
 .player-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
   font-size: 0.9rem;
   color: var(--muted);
   margin-bottom: 1rem;
+}
+
+.player-bar input {
+  max-width: 280px;
 }
 
 .player-bar strong {

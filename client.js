@@ -1,26 +1,23 @@
 var Sched20 = (function () {
-  var TOKEN_KEY = 'sched20.accessToken';
-  var EXP_KEY = 'sched20.accessTokenExp';
-  var GOOGLE_SCOPE = 'openid email profile https://www.googleapis.com/auth/calendar.freebusy';
+  var MASTER_CODE_KEY = 'sched20.masterCode';
+  var PLAYER_NAME_KEY = 'sched20.playerName';
 
   function getConfig_() {
     var cfg = window.SCHED20_CONFIG || {};
     return {
       apiUrl: String(cfg.apiUrl || '').trim(),
-      googleClientId: String(cfg.googleClientId || '').trim(),
-      apiVersion: cfg.apiVersion || 1,
+      apiVersion: cfg.apiVersion || 2,
       uiVersion: String(cfg.uiVersion || '')
     };
   }
 
   function isConfigured() {
-    var cfg = getConfig_();
-    return !!(cfg.apiUrl && cfg.googleClientId);
+    return !!getConfig_().apiUrl;
   }
 
   function storageGet_(key) {
     try {
-      return sessionStorage.getItem(key) || '';
+      return localStorage.getItem(key) || '';
     } catch (err) {
       return '';
     }
@@ -28,99 +25,58 @@ var Sched20 = (function () {
 
   function storageSet_(key, value) {
     try {
-      sessionStorage.setItem(key, value);
+      localStorage.setItem(key, value);
     } catch (err) {}
   }
 
   function storageRemove_(key) {
     try {
-      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
     } catch (err) {}
   }
 
-  function authError_(message) {
-    var err = new Error(message || 'Accedi con Google per continuare.');
-    err.code = 'auth';
-    return err;
+  function getMasterCode() {
+    return storageGet_(MASTER_CODE_KEY);
+  }
+
+  function setMasterCode(code) {
+    storageSet_(MASTER_CODE_KEY, String(code || ''));
+  }
+
+  function clearMasterCode() {
+    storageRemove_(MASTER_CODE_KEY);
+  }
+
+  function getPlayerName() {
+    return storageGet_(PLAYER_NAME_KEY);
+  }
+
+  function setPlayerName(name) {
+    var value = String(name || '').replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim();
+    if (value) storageSet_(PLAYER_NAME_KEY, value);
+    else storageRemove_(PLAYER_NAME_KEY);
+    return value;
   }
 
   function isAuthError(err) {
     return !!(err && err.code === 'auth');
   }
 
-  function hasValidToken() {
-    var token = storageGet_(TOKEN_KEY);
-    var exp = Number(storageGet_(EXP_KEY) || 0);
-    return !!(token && exp > Date.now());
-  }
-
-  function saveToken_(token, expiresIn) {
-    var seconds = Number(expiresIn) || 3600;
-    var exp = Date.now() + Math.max(30, seconds - 60) * 1000;
-    storageSet_(TOKEN_KEY, token);
-    storageSet_(EXP_KEY, String(exp));
-  }
-
-  function clearSession() {
-    storageRemove_(TOKEN_KEY);
-    storageRemove_(EXP_KEY);
-  }
-
-  function whenGoogleReady_() {
-    return new Promise(function (resolve, reject) {
-      var start = Date.now();
-      (function tick() {
-        if (window.google && google.accounts && google.accounts.oauth2) {
-          resolve();
-          return;
-        }
-        if (Date.now() - start > 8000) {
-          reject(new Error('Login Google non disponibile. Controlla la rete e ricarica la pagina.'));
-          return;
-        }
-        setTimeout(tick, 50);
-      })();
+  function withIdentity_(params) {
+    var source = params || {};
+    var out = {};
+    Object.keys(source).forEach(function (key) {
+      out[key] = source[key];
     });
-  }
-
-  function signIn() {
-    var cfg = getConfig_();
-    if (!cfg.googleClientId) {
-      return Promise.reject(new Error('Manca googleClientId in config.js.'));
+    if (!out.masterCode) {
+      var code = getMasterCode();
+      if (code) out.masterCode = code;
     }
-    if (!window.google || !google.accounts || !google.accounts.oauth2) {
-      return Promise.reject(new Error('Login Google non ancora pronto. Riprova tra un istante.'));
+    if (!out.playerName) {
+      var name = getPlayerName();
+      if (name) out.playerName = name;
     }
-    return new Promise(function (resolve, reject) {
-      var client = google.accounts.oauth2.initTokenClient({
-        client_id: cfg.googleClientId,
-        scope: GOOGLE_SCOPE,
-        callback: function (resp) {
-          if (!resp || resp.error) {
-            var cancelled = resp && (resp.error === 'access_denied' || resp.error === 'popup_closed');
-            reject(new Error(cancelled ? 'Accesso annullato.' : 'Accesso Google non riuscito.'));
-            return;
-          }
-          saveToken_(resp.access_token, resp.expires_in);
-          resolve(resp.access_token);
-        }
-      });
-      client.requestAccessToken({
-        prompt: 'select_account',
-        include_granted_scopes: true
-      });
-    });
-  }
-
-  function signOut() {
-    var token = storageGet_(TOKEN_KEY);
-    clearSession();
-    if (token && window.google && google.accounts && google.accounts.oauth2 && google.accounts.oauth2.revoke) {
-      try {
-        google.accounts.oauth2.revoke(token, function () {});
-      } catch (err) {}
-    }
-    return Promise.resolve();
+    return out;
   }
 
   function run(action, params) {
@@ -128,19 +84,13 @@ var Sched20 = (function () {
     if (!cfg.apiUrl) {
       return Promise.reject(new Error('Manca apiUrl in config.js.'));
     }
-    var token = storageGet_(TOKEN_KEY);
-    if (!hasValidToken()) {
-      clearSession();
-      return Promise.reject(authError_());
-    }
     return fetch(cfg.apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         v: cfg.apiVersion,
         action: action,
-        accessToken: token,
-        params: params || {}
+        params: withIdentity_(params)
       })
     }).then(function (res) {
       return res.text();
@@ -156,7 +106,6 @@ var Sched20 = (function () {
       if (!body || body.ok !== true) {
         var error = new Error(body && body.error ? body.error : 'Errore API');
         error.code = body && body.code ? body.code : '';
-        if (error.code === 'auth') clearSession();
         throw error;
       }
       return body.data;
@@ -249,50 +198,19 @@ var Sched20 = (function () {
     el.innerHTML =
       '<div class="card setup-card">' +
         '<h2>Configurazione mancante</h2>' +
-        '<p>Apri <strong>web/config.js</strong> e imposta i due valori pubblici:</p>' +
-        '<ul>' +
-          '<li><strong>apiUrl</strong>: URL della web app, quello che termina con /exec</li>' +
-          '<li><strong>googleClientId</strong>: Client ID OAuth dell\'applicazione web</li>' +
-        '</ul>' +
+        '<p>Apri <strong>web/config.js</strong> e imposta <strong>apiUrl</strong>: l\'URL della web app, quello che termina con /exec.</p>' +
         '<p>Poi pubblica la cartella web sul repo GitHub Pages.</p>' +
       '</div>';
   }
 
-  function renderSignIn(el, messageEl, onSignedIn) {
-    el.innerHTML =
-      '<div class="card card-muted">' +
-        '<h2>Accedi con Google</h2>' +
-        '<p>Per organizzare o votare le sessioni serve un account Google.</p>' +
-        '<p>Al primo accesso accetta identità e lettura degli orari occupati del calendario. L\'app non legge titoli, invitati o descrizioni degli eventi.</p>' +
-        '<button class="btn btn-primary" id="btnSignIn" type="button">Accedi con Google</button>' +
-      '</div>';
-    var btn = document.getElementById('btnSignIn');
-    btn.disabled = true;
-    whenGoogleReady_().then(function () {
-      btn.disabled = false;
-    }).catch(function (err) {
-      btn.disabled = false;
-      showMessage(messageEl, err.message, 'error');
-    });
-    btn.addEventListener('click', function () {
-      btn.disabled = true;
-      clearMessage(messageEl);
-      signIn().then(function () {
-        onSignedIn();
-      }).catch(function (err) {
-        btn.disabled = false;
-        showMessage(messageEl, err.message, 'error');
-      });
-    });
-  }
-
   return {
     isConfigured: isConfigured,
-    hasValidToken: hasValidToken,
     isAuthError: isAuthError,
-    signIn: signIn,
-    signOut: signOut,
-    clearSession: clearSession,
+    getMasterCode: getMasterCode,
+    setMasterCode: setMasterCode,
+    clearMasterCode: clearMasterCode,
+    getPlayerName: getPlayerName,
+    setPlayerName: setPlayerName,
     run: run,
     buildHomeLink: buildHomeLink,
     buildCampaignLink: buildCampaignLink,
@@ -303,7 +221,6 @@ var Sched20 = (function () {
     clearMessage: clearMessage,
     escapeHtml: escapeHtml,
     applyVersion: applyVersion,
-    renderSetup: renderSetup,
-    renderSignIn: renderSignIn
+    renderSetup: renderSetup
   };
 })();

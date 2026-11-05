@@ -4,29 +4,32 @@
   var messageEl = document.getElementById('message');
   var playerBar = document.getElementById('playerBar');
   var isOwner = false;
-  var userEmail = '';
 
   Sched20.applyVersion(document.getElementById('versionLine'));
   document.getElementById('homeLink').href = Sched20.buildHomeLink();
 
   function fail(err) {
-    if (Sched20.isAuthError(err)) {
-      playerBar.hidden = true;
-      document.getElementById('topLink').hidden = true;
-      Sched20.renderSignIn(app, messageEl, init);
-      Sched20.showMessage(messageEl, err.message, 'error');
-      return;
-    }
     document.getElementById('campaignSubtitle').textContent = 'Errore';
     app.innerHTML = '<div class="card card-muted"><p>' + Sched20.escapeHtml(err.message || 'Errore') + '</p></div>';
   }
 
   function showActionError(err) {
     if (Sched20.isAuthError(err)) {
-      fail(err);
+      Sched20.clearMasterCode();
+      isOwner = false;
+      document.getElementById('topLink').hidden = true;
+      document.getElementById('campaignSubtitle').textContent = 'Scrivi il tuo nome e indica se ci sei';
+      Sched20.showMessage(messageEl, err.message || 'Codice master non valido.', 'error');
+      loadSessions();
       return;
     }
     Sched20.showMessage(messageEl, err.message || 'Errore', 'error');
+  }
+
+  function currentPlayerName() {
+    var input = document.getElementById('playerName');
+    var name = input ? input.value : Sched20.getPlayerName();
+    return Sched20.setPlayerName(name);
   }
 
   function renderMasterPanel() {
@@ -50,9 +53,9 @@
     var statusBadge = session.status === 'confirmed'
       ? '<span class="badge badge-confirmed">Confermata</span>'
       : '<span class="badge badge-proposed">Proposta</span>';
-        var notes = session.notes
-          ? '<p class="session-notes">' + Sched20.escapeHtml(session.notes) + '</p>'
-          : '';
+    var notes = session.notes
+      ? '<p class="session-notes">' + Sched20.escapeHtml(session.notes) + '</p>'
+      : '';
     var masterActions = '';
     if (isOwner && session.status === 'proposed') {
       masterActions =
@@ -83,7 +86,6 @@
           '<button class="btn-vote' + voteClass('maybe') + '" type="button" data-uuid="' + Sched20.escapeHtml(session.uuid) + '" data-vote="maybe">Forse</button>' +
           '<button class="btn-vote' + voteClass('no') + '" type="button" data-uuid="' + Sched20.escapeHtml(session.uuid) + '" data-vote="no">No</button>' +
         '</div>' +
-        '<div class="cal-hint" data-session="' + Sched20.escapeHtml(session.uuid) + '" hidden></div>' +
         masterActions +
       '</div>'
     );
@@ -108,11 +110,7 @@
             Sched20.showMessage(messageEl, 'Sessione proposta.', 'success');
             return loadSessions();
           }).catch(function (err) {
-            if (Sched20.isAuthError(err)) {
-              fail(err);
-              return;
-            }
-            Sched20.showMessage(messageEl, err.message, 'error');
+            showActionError(err);
             if (btnPropose.isConnected) btnPropose.disabled = false;
           });
         });
@@ -137,9 +135,18 @@
 
     app.querySelectorAll('.btn-vote').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        var name = currentPlayerName();
+        if (!name) {
+          Sched20.showMessage(messageEl, 'Inserisci il tuo nome per votare.', 'error');
+          var input = document.getElementById('playerName');
+          if (input) input.focus();
+          return;
+        }
+        Sched20.clearMessage(messageEl);
         Sched20.run('setAvailability', {
           sessionUuid: btn.getAttribute('data-uuid'),
-          vote: btn.getAttribute('data-vote')
+          vote: btn.getAttribute('data-vote'),
+          playerName: name
         }).then(function () {
           return loadSessions();
         }).catch(showActionError);
@@ -162,48 +169,22 @@
     bindEvents();
   }
 
-  function loadSuggestions() {
-    var labels = {
-      free: 'Il tuo calendario risulta libero',
-      partial: 'Hai un impegno in parte sovrapposto',
-      busy: 'Hai un impegno in questo orario'
-    };
-    Sched20.run('getCalendarSuggestions', { campaignUuid: campaignUuid })
-      .then(function (res) {
-        if (!res || res.status !== 'ok') return;
-        app.querySelectorAll('.cal-hint').forEach(function (el) {
-          var hint = res.suggestions && res.suggestions[el.getAttribute('data-session')];
-          if (!hint || !labels[hint]) return;
-          el.textContent = labels[hint];
-          el.className = 'cal-hint cal-' + hint;
-          el.hidden = false;
-        });
-      })
-      .catch(function (err) {
-        if (Sched20.isAuthError(err)) fail(err);
-      });
-  }
-
   function loadSessions() {
-    return Sched20.run('getCampaignSessions', { campaignUuid: campaignUuid })
-      .then(function (sessions) {
-        renderSessions(sessions);
-        loadSuggestions();
-      });
+    return Sched20.run('getCampaignSessions', {
+      campaignUuid: campaignUuid,
+      playerName: currentPlayerName()
+    }).then(function (sessions) {
+      renderSessions(sessions);
+    });
   }
 
   function renderPlayerBar() {
     playerBar.hidden = false;
     playerBar.innerHTML =
-      '<span>Connesso come <strong>' + Sched20.escapeHtml(userEmail) + '</strong></span>' +
-      '<button class="btn btn-secondary btn-sm" id="btnSignOut" type="button">Esci</button>';
-    document.getElementById('btnSignOut').addEventListener('click', function () {
-      Sched20.signOut().then(function () {
-        playerBar.hidden = true;
-        document.getElementById('topLink').hidden = true;
-        Sched20.clearMessage(messageEl);
-        Sched20.renderSignIn(app, messageEl, init);
-      });
+      '<label for="playerName">Il tuo nome</label>' +
+      '<input type="text" id="playerName" maxlength="80" placeholder="Es. Marco" autocomplete="nickname" value="' + Sched20.escapeHtml(Sched20.getPlayerName()) + '">';
+    document.getElementById('playerName').addEventListener('change', function () {
+      Sched20.setPlayerName(this.value);
     });
   }
 
@@ -216,19 +197,12 @@
         var campaign = data && data.campaign ? data.campaign : {};
         document.getElementById('campaignTitle').textContent = campaign.name || 'Campagna';
         document.title = (campaign.name || 'Campagna') + ' · Sched20';
-        if (!data || !data.email) {
-          Sched20.clearSession();
-          playerBar.hidden = true;
-          Sched20.renderSignIn(app, messageEl, init);
-          return;
-        }
-        userEmail = data.email;
-        isOwner = !!data.isOwner;
+        isOwner = !!(data && data.isOwner);
         document.getElementById('campaignSubtitle').textContent = isOwner
           ? 'Sei il master di questa campagna'
-          : 'Indica la tua disponibilità per ogni data';
-        document.getElementById('homeLink').textContent = isOwner ? '← Torna alla home master' : '← Home';
-        document.getElementById('topLink').hidden = false;
+          : 'Scrivi il tuo nome e indica se ci sei';
+        document.getElementById('homeLink').textContent = '← Torna alla home master';
+        document.getElementById('topLink').hidden = !isOwner;
         renderPlayerBar();
         return loadSessions();
       })
@@ -243,11 +217,6 @@
   if (!Sched20.isConfigured()) {
     document.getElementById('campaignSubtitle').textContent = 'Configurazione richiesta';
     Sched20.renderSetup(app);
-    return;
-  }
-  if (!Sched20.hasValidToken()) {
-    document.getElementById('campaignSubtitle').textContent = 'Accesso richiesto';
-    Sched20.renderSignIn(app, messageEl, init);
     return;
   }
   init();
