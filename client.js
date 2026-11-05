@@ -211,10 +211,38 @@ var Sched20 = (function () {
       .replace(/"/g, '&quot;');
   }
 
+  function playerKeyName_(uuid) {
+    return 'sched20.playerKey.' + uuid;
+  }
+
+  function getPlayerKey(uuid) {
+    return storageGet_(playerKeyName_(uuid));
+  }
+
+  function setPlayerKey(uuid, key) {
+    storageSet_(playerKeyName_(uuid), key);
+  }
+
+  function clearPlayerKey(uuid) {
+    storageRemove_(playerKeyName_(uuid));
+  }
+
+  function getSessionToken() {
+    return storageGet_('sched20.session');
+  }
+
+  function setSessionToken(token) {
+    storageSet_('sched20.session', token);
+  }
+
+  function clearSessionToken() {
+    storageRemove_('sched20.session');
+  }
+
   function applyVersion(el) {
     if (!el) return;
     var cfg = getConfig_();
-    el.textContent = 'Interfaccia ' + (cfg.uiVersion || '—') + ' · API v' + cfg.apiVersion;
+    el.textContent = 'Sched20 ' + (cfg.uiVersion || '—') + ' · API v' + cfg.apiVersion + ' · di Davi';
   }
 
   function renderSetup(el) {
@@ -225,6 +253,34 @@ var Sched20 = (function () {
         '<p>Apri <strong>web/config.js</strong> e imposta <strong>apiUrl</strong>: l\'URL della web app, quello che termina con /exec.</p>' +
         '<p>Poi pubblica la cartella web sul repo GitHub Pages.</p>' +
       '</div>';
+  }
+
+  // Navigazione: il tasto Indietro del browser torna alla schermata precedente.
+  var screens_ = {};
+  var screenSeq_ = 0;
+  var rootRender_ = null;
+
+  function initNav(renderRoot) {
+    rootRender_ = renderRoot;
+    screens_ = {};
+    try { history.replaceState({ s20: 0 }, '', window.location.href); } catch (e) { /* ignorato */ }
+    window.addEventListener('popstate', function (e) {
+      var id = e.state && e.state.s20;
+      if (id && screens_[id]) { screens_[id](); return; }
+      rootRender_();
+    });
+  }
+
+  function navTo(render) {
+    screenSeq_ += 1;
+    screens_[screenSeq_] = render;
+    try { history.pushState({ s20: screenSeq_ }, '', window.location.href); } catch (e) { /* ignorato */ }
+    render();
+  }
+
+  function navBack(fallback) {
+    if (history.state && history.state.s20) { history.back(); return; }
+    fallback();
   }
 
   return {
@@ -247,6 +303,15 @@ var Sched20 = (function () {
     clearMessage: clearMessage,
     escapeHtml: escapeHtml,
     applyVersion: applyVersion,
-    renderSetup: renderSetup
+    getPlayerKey: getPlayerKey,
+    setPlayerKey: setPlayerKey,
+    clearPlayerKey: clearPlayerKey,
+    getSessionToken: getSessionToken,
+    setSessionToken: setSessionToken,
+    clearSessionToken: clearSessionToken,
+    renderSetup: renderSetup,
+    initNav: initNav,
+    navTo: navTo,
+    navBack: navBack
   };
 })();

@@ -27,6 +27,12 @@
     return '';
   }
 
+  // Torna alla home senza lasciare schermate fantasma nella cronologia.
+  function goHome() {
+    try { history.replaceState({ s20: 0 }, '', window.location.href); } catch (e) { /* ignorato */ }
+    renderChoice();
+  }
+
   function renderChoice() {
     setStage(false);
     showApp();
@@ -44,10 +50,26 @@
             '<span>Apri il link della campagna e vota le date.</span>' +
           '</button>' +
         '</div>' +
+        '<p class="subtitle account-line">' +
+          (Sched20.getSessionToken()
+            ? 'Sei connesso con la mail. <button class="text-back" id="btnLogout" type="button">Esci</button>'
+            : 'Hai un account? <button class="text-back" id="btnLoginMail" type="button">Accedi con la mail</button>') +
+        '</p>' +
       '</div>';
 
-    document.getElementById('btnAsMaster').addEventListener('click', enterMaster);
-    document.getElementById('btnAsPlayer').addEventListener('click', renderPlayer);
+    var btnLoginMail = document.getElementById('btnLoginMail');
+    if (btnLoginMail) btnLoginMail.addEventListener('click', function () { Sched20.navTo(renderLogin); });
+    var btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', function () {
+        Sched20.clearSessionToken();
+        Sched20.showMessage(messageEl, 'Sei uscito dall\'account su questo dispositivo.', 'success');
+        goHome();
+      });
+    }
+
+    document.getElementById('btnAsMaster').addEventListener('click', function () { Sched20.navTo(enterMaster); });
+    document.getElementById('btnAsPlayer').addEventListener('click', function () { Sched20.navTo(renderPlayer); });
   }
 
   function renderPlayer() {
@@ -77,8 +99,9 @@
 
     document.getElementById('btnBack').addEventListener('click', function () {
       Sched20.clearMessage(messageEl);
-      renderChoice();
+      Sched20.navBack(goHome);
     });
+    loadAccountCampaigns();
     document.getElementById('btnOpenCampaign').addEventListener('click', function () {
       var uuid = uuidFromText(document.getElementById('campaignLink').value);
       Sched20.clearMessage(messageEl);
@@ -88,6 +111,77 @@
       }
       window.location.href = 'campaign.html?c=' + encodeURIComponent(uuid);
     });
+  }
+
+  function renderLogin() {
+    setStage(false);
+    showApp();
+    app.innerHTML =
+      '<div class="card">' +
+        '<button class="text-back" id="btnBack" type="button">← Indietro</button>' +
+        '<h2>Accedi con la mail</h2>' +
+        '<p class="subtitle">Ti mandiamo un link che vale 15 minuti. Con l\'account ritrovi tutte le tue campagne da qualsiasi dispositivo.</p>' +
+        '<label for="loginEmail">Mail</label>' +
+        '<input type="email" id="loginEmail" maxlength="120" autocomplete="email">' +
+        '<button class="btn btn-primary" id="btnSendLink" type="button">Mandami il link</button>' +
+      '</div>';
+
+    document.getElementById('btnBack').addEventListener('click', function () {
+      Sched20.clearMessage(messageEl);
+      Sched20.navBack(goHome);
+    });
+    document.getElementById('btnSendLink').addEventListener('click', function () {
+      var btn = document.getElementById('btnSendLink');
+      var email = document.getElementById('loginEmail').value;
+      Sched20.clearMessage(messageEl);
+      btn.disabled = true;
+      Sched20.run('requestLogin', { email: email })
+        .then(function () {
+          Sched20.showMessage(messageEl, 'Se la mail è corretta, troverai il link nella tua casella tra poco.', 'success');
+          btn.disabled = false;
+        })
+        .catch(function (err) {
+          Sched20.showMessage(messageEl, err.message, 'error');
+          btn.disabled = false;
+        });
+    });
+  }
+
+  function loadAccountCampaigns() {
+    var token = Sched20.getSessionToken();
+    if (!token) return;
+    Sched20.run('listMyCampaigns', { sessionToken: token })
+      .then(function (items) {
+        if (!items || !items.length) return;
+        var list = '<p class="section-label">Dal tuo account</p><ul class="recent-list">' + items.map(function (item) {
+          var href = 'campaign.html?c=' + encodeURIComponent(item.campaignUuid);
+          return '<li><a href="' + Sched20.escapeHtml(href) + '"><strong>' +
+            Sched20.escapeHtml(item.campaignName) + '</strong><span>' +
+            Sched20.escapeHtml(item.playerName) + (item.closed ? ' · chiusa' : ' · apri e vota') + '</span></a></li>';
+        }).join('') + '</ul>';
+        var label = document.querySelector('.card .subtitle');
+        if (label) label.insertAdjacentHTML('afterend', list);
+      })
+      .catch(function () {
+        Sched20.clearSessionToken();
+      });
+  }
+
+  // Il link ricevuto via mail: ?login=TOKEN
+  function handleLoginLink() {
+    var params = new URLSearchParams(window.location.search);
+    var token = params.get('login');
+    if (!token) return;
+    history.replaceState(null, '', window.location.pathname);
+    Sched20.run('exchangeLogin', { token: token })
+      .then(function (res) {
+        Sched20.setSessionToken(res.sessionToken);
+        goHome();
+        Sched20.showMessage(messageEl, 'Accesso effettuato come ' + res.email + '.', 'success');
+      })
+      .catch(function (err) {
+        Sched20.showMessage(messageEl, err.message, 'error');
+      });
   }
 
   function enterMaster() {
@@ -116,7 +210,7 @@
       Sched20.showMessage(messageEl, err.message, 'error');
       return;
     }
-    renderChoice();
+    goHome();
     Sched20.showMessage(messageEl, err.message || 'Errore', 'error');
   }
 
@@ -146,7 +240,7 @@
 
     document.getElementById('btnBack').addEventListener('click', function () {
       Sched20.clearMessage(messageEl);
-      renderChoice();
+      Sched20.navBack(goHome);
     });
 
     document.getElementById('btnUnlock').addEventListener('click', function () {
@@ -242,6 +336,11 @@
       '<div class="card">' +
         '<h2>Nuova campagna</h2>' +
         '<p class="subtitle">Una campagna è un tavolo. Dentro puoi proporre più date, finché non ne confermi una.</p>' +
+        '<label for="campaignKind">Tipo</label>' +
+        '<select id="campaignKind">' +
+          '<option value="campaign">Campagna (più sessioni)</option>' +
+          '<option value="oneshot">One-shot (una sola sessione)</option>' +
+        '</select>' +
         '<label for="campaignName">Nome campagna</label>' +
         '<input type="text" id="campaignName" maxlength="120" placeholder="Es. La Compagnia dell\'Anello">' +
         '<button class="btn btn-primary" id="btnCreate" type="button">Crea campagna</button>' +
@@ -250,7 +349,7 @@
     document.getElementById('btnSignOut').addEventListener('click', function () {
       Sched20.clearMasterCode();
       Sched20.clearMessage(messageEl);
-      renderChoice();
+      goHome();
     });
 
     app.querySelectorAll('.btn-copy').forEach(function (btn) {
@@ -270,7 +369,8 @@
       var btn = document.getElementById('btnCreate');
       btn.disabled = true;
       Sched20.clearMessage(messageEl);
-      Sched20.run('createCampaign', { name: name })
+      var kind = document.getElementById('campaignKind').value;
+      Sched20.run('createCampaign', { name: name, kind: kind })
         .then(function () {
           Sched20.showMessage(messageEl, 'Campagna creata.', 'success');
           enterMaster();
@@ -290,5 +390,7 @@
     Sched20.renderSetup(app);
     return;
   }
+  handleLoginLink();
+  Sched20.initNav(renderChoice);
   renderChoice();
 })();
